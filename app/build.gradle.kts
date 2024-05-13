@@ -84,4 +84,10 @@ dependencies {
     // Dagger Hilt dependency
     implementation("com.google.dagger:hilt-android:2.48")
     kapt("com.google.dagger:hilt-android-compiler:2.48")
+
+    // ExoPlayer dependency
+    val exoplayer_version = "1.3.1"
+    implementation("androidx.media3:media3-exoplayer:$exoplayer_version")
+    implementation("androidx.media3:media3-exoplayer-dash:$exoplayer_version")
+    implementation("androidx.media3:media3-ui:$exoplayer_version")
 }
