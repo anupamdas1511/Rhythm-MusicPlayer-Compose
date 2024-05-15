@@ -4,6 +4,7 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -19,10 +20,16 @@ import com.anupam.musicplayer.viewmodels.MediaViewModel
 @Composable
 fun Navigation() {
     val navController = rememberNavController()
+    val context = LocalContext.current
     val mediaViewModel: MediaViewModel = viewModel()
-//    mediaViewModel.loadMediaFiles()
-    mediaViewModel.initializeListIfNeeded(LocalContext.current)
-//    Log.d("Kuch toh debug", "Hello " + mediaViewModel.state.collectAsState(MediaState()).value.mediaFiles)
+
+    mediaViewModel.initializeListIfNeeded(context)
+
+    //  !! It lags too much like crazy !!
+//    LaunchedEffect(key1 = null) {
+//        mediaViewModel.loadBitmapIfNeeded(context)
+//    }
+//    ? Log.d("Kuch toh debug", "Hello " + mediaViewModel.state.collectAsState(MediaState()).value.mediaFiles)
     NavHost(navController = navController, startDestination = "dashboard") {
         composable("dashboard") {
             MusicDashboard(

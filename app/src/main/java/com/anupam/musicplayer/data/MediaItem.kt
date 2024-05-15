@@ -10,5 +10,5 @@ data class MediaItem(
     val contentUri: Uri,
     val artist: String?,
     val dateAdded: Long,
-    val duration: String
+    val duration: Long
 )
