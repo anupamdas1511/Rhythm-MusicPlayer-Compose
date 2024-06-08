@@ -22,7 +22,7 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @RequiresApi(Build.VERSION_CODES.O)
+    @RequiresApi(Build.VERSION_CODES.Q)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -47,6 +47,6 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun GreetingPreview() {
     MusicPlayerTheme {
-        MusicPlayer()
+//        MusicPlayer()
     }
 }

@@ -2,7 +2,6 @@ package com.anupam.musicplayer.presentations.screens
 
 import android.graphics.drawable.Icon
 import android.net.Uri
-import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,47 +12,94 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.anupam.musicplayer.R
 import com.anupam.musicplayer.data.MediaItem
 import com.anupam.musicplayer.data.MediaState
 import com.anupam.musicplayer.presentations.components.FloatingBottomPlayer
+import com.anupam.musicplayer.presentations.components.rememberSearchState
 import com.anupam.musicplayer.viewmodels.MediaEvent
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MusicDashboard(
     mediaState: Flow<MediaState>,
-    onEvent: (MediaEvent) -> Unit
+    onEvent: (MediaEvent) -> Unit,
+    navController: NavController
 ) {
     val state = mediaState.collectAsState(initial = MediaState())
-    Scaffold (
+    val context = LocalContext.current
+//    val searchState = rememberSearchState()
+//    var isSearching = true
+    Scaffold(
+        topBar = {
+            Column {
+                androidx.compose.material3.TopAppBar(
+                    title = { Text(text = "MusicPlayer") },
+                    actions = {
+                        IconButton(onClick = {
+//                            if (searchState.isSearchModeEnabled) searchState.enableSearchMode() else searchState.disableSearchMode()
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = null
+                            )
+                        }
+                    },
+                )
+//                if (searchState.isSearchModeEnabled) {
+//                    SearchBar(
+//                        query = "",
+//                        onQueryChange = {},
+//                        onSearch = {},
+//                        active = isSearching,
+//                        onActiveChange = {}
+//                    ) {
+//
+//                    }
+//                }
+            }
+        },
         bottomBar = {
-            // todo: unimplemented component
-            FloatingBottomPlayer(state = state.value, onEvent = onEvent)
+            FloatingBottomPlayer(
+                state = state.value,
+                onEvent = onEvent,
+                navController = navController
+            )
         }
     ) {
-        LazyColumn (
+        LazyColumn(
             modifier = Modifier
-                .padding(it.calculateTopPadding())
+                .padding(vertical = it.calculateTopPadding())
         ) {
-            items(state.value.mediaFiles) {mediaItem ->
+            itemsIndexed(state.value.mediaFiles) { index, mediaItem ->
                 MusicItem(
                     audio = mediaItem,
+                    index = index,
                     onClick = {
-                        onEvent(MediaEvent.SelectMedia(mediaItem))
+                        onEvent(MediaEvent.SelectMedia(index, context))
                     }
                 )
             }
@@ -63,21 +109,22 @@ fun MusicDashboard(
 
 @Composable
 fun MusicItem(
-    audio: MediaItem,
     modifier: Modifier = Modifier,
+    audio: MediaItem,
+    index: Int = 0,
     onClick: () -> Unit
 ) {
-    Row (
+    Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(10.dp)
             .clickable {
                 onClick.invoke()
             }
+            .padding(10.dp)
     ) {
-        Column (
+        Column(
             modifier.weight(10f)
         ) {
             Text(
@@ -107,13 +154,25 @@ fun MusicItem(
 }
 
 
+//@Preview
+//@Composable
+//private fun MusicItemPreview() {
+//    MusicItem(
+//        audio = MediaItem(
+//            0,
+//            "This is a very long text that will be clipped if exceeds the fixed boundary",
+//            null,
+//            Uri.EMPTY,
+//            "Anupam Das",
+//            12345,
+//            0L
+//        ),
+//        onClick = {}
+//    )
+//}
+
 @Preview
 @Composable
-private fun MusicItemPreview() {
-    MusicItem(
-        audio = MediaItem(
-            0, "This is a very long text that will be clipped if exceeds the fixed boundary", null, Uri.EMPTY, "Anupam Das", 12345, 0L
-        ),
-        onClick = {}
-    )
+private fun MediaDashboardPreview() {
+    MusicDashboard(mediaState = flowOf(MediaState()), onEvent = {}, navController = rememberNavController())
 }

@@ -35,7 +35,7 @@ fun PlayControl(
 
         Canvas(modifier = modifier) {
             drawCircle(
-                color = Color.DarkGray,
+                color = Color(0xF0949494),
                 radius = 50f,
                 style = Stroke(
                     width = 5f

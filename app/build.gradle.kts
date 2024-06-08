@@ -73,21 +73,29 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.6.6")
 
     // Navigation dependencies
-    val nav_version = "2.7.7"
-    implementation("androidx.navigation:navigation-compose:$nav_version")
+    implementation(libs.navigation)
 
     // ViewModel dependency
-    val lifecycle_version = "2.7.0"
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycle_version")
+    implementation(libs.lifecycle.viewmodel.ktx)
+    implementation(libs.lifecycle.viewmodel.compose)
 
     // Dagger Hilt dependency
     implementation("com.google.dagger:hilt-android:2.48")
     kapt("com.google.dagger:hilt-android-compiler:2.48")
 
     // ExoPlayer dependency
-    val exoplayer_version = "1.3.1"
-    implementation("androidx.media3:media3-exoplayer:$exoplayer_version")
-    implementation("androidx.media3:media3-exoplayer-dash:$exoplayer_version")
-    implementation("androidx.media3:media3-ui:$exoplayer_version")
+    implementation(libs.media3.ui)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.exoplayer.dash)
+
+//    implementation(libs.lincollincolAudiowaveform)
+//    implementation(libs.lincollincolAmplituda)
+
+//    implementation(libs.accompanist.pager)
+//    implementation(libs.accompanist.pager.indicators)
+//    implementation(libs.accompanist.insets)
+//    implementation(libs.accompanist.insets.ui)
+//    implementation(libs.accompanist.systemuicontroller)
+//    https://github.com/SmartToolFactory/Compose-Colorful-Sliders
+    implementation(libs.colorful.sliders)
 }
