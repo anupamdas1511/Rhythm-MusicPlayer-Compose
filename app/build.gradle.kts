@@ -97,5 +97,11 @@ dependencies {
 //    implementation(libs.accompanist.insets.ui)
 //    implementation(libs.accompanist.systemuicontroller)
 //    https://github.com/SmartToolFactory/Compose-Colorful-Sliders
-    implementation(libs.colorful.sliders)
+//    implementation(libs.colorful.sliders)
+//    implementation(libs.coil)
+
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    annotationProcessor(libs.room.compiler)
+    kapt(libs.room.compiler)
 }

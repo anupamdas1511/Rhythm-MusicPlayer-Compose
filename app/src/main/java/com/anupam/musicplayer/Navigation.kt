@@ -3,6 +3,7 @@ package com.anupam.musicplayer
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
@@ -19,7 +20,9 @@ fun Navigation() {
     val context = LocalContext.current
     val mediaViewModel: MediaViewModel = viewModel()
 
-    mediaViewModel.initializeListIfNeeded(context)
+    LaunchedEffect(Unit) {
+        mediaViewModel.initializeListIfNeeded(context)
+    }
 
     //  !! It lags too much like crazy !!
 //    LaunchedEffect(key1 = null) {

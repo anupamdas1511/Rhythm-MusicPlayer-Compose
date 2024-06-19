@@ -30,14 +30,17 @@ import androidx.palette.graphics.Palette
 import com.anupam.musicplayer.R
 import com.anupam.musicplayer.data.MediaState
 import com.anupam.musicplayer.data.MediaItem
+import com.anupam.musicplayer.db.MediaDao
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -47,9 +50,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MediaViewModel @Inject constructor(
+    private val dao: MediaDao,
     private val contentResolver: ContentResolver
 ) : ViewModel() {
-    private val _audioList = MutableStateFlow<List<MediaItem>>(emptyList())
+    private val _audioList: StateFlow<List<MediaItem>> = dao.getAllMediaByTitle()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 //    val audioList: StateFlow<List<MediaItem>> = _audioList
     private var _initialized = false
     private val _backgroundScope = viewModelScope.plus(Dispatchers.Default)
@@ -59,7 +64,9 @@ class MediaViewModel @Inject constructor(
     private var mediaPlayer: MediaPlayer? = null
     private var isMediaPlayerPrepared = false
     private var _currentPosition = MutableStateFlow(0L)
+    private var _currentMediaIndex = MutableStateFlow(0)
     private var _backgroundColor = MutableStateFlow(Color.Black)
+    private var _cover = MutableStateFlow<Bitmap?>(null)
 
     private var _amplitudes = MutableStateFlow<List<Int>>(emptyList())
 
@@ -68,44 +75,62 @@ class MediaViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(MediaState())
     val state = combine(
-        _state, _audioList, _currentPosition, _backgroundColor, _amplitudes
-    ) { state, audioList, currentPosition, backgroundColor, amplitudes ->
+        _state, _audioList, _currentPosition, _backgroundColor, _cover
+    ) { state, audioList, currentPosition, backgroundColor, cover ->
         state.copy(
             mediaFiles = audioList,
             currentPosition = currentPosition,
             backgroundColor = backgroundColor,
-            amplitudes = amplitudes
+            cover = cover
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MediaState())
 
     init {
-        mediaPlayer = MediaPlayer()
-        mediaPlayer?.setAudioAttributes(
-            AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build()
-        )
-
+//        Log.d("Kuch toh debug", "Media started")
+        initMediaPlayer()
         startPositionUpdateCoroutine()
     }
 
-    private fun startPositionUpdateCoroutine() {
-        timerJob?.cancel()
-        timerJob = viewModelScope.launch {
-            while (true) {
-                delay(1000)
-                updateStateWithCurrentPosition()
+    private fun initMediaPlayer() {
+        if (mediaPlayer == null) {
+            mediaPlayer = MediaPlayer()
+            mediaPlayer?.apply {
+                setAudioAttributes(
+                    AudioAttributes.Builder()
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                        .build()
+                )
+//                setOnPreparedListener {
+//                    seekTo(_currentPosition.value.toInt())
+//                    start()
+//                    isMediaPlayerPrepared = true
+//                    _state.update { it.copy(isPlaying = true) }
+//                }
             }
         }
-        timerJob?.start()
+    }
+
+    private fun startPositionUpdateCoroutine() {
+//        timerJob?.cancel()
+        if (timerJob == null) {
+            timerJob = viewModelScope.launch {
+                while (true) {
+                    delay(1000)
+                    updateStateWithCurrentPosition()
+                }
+            }
+            timerJob?.start()
+        }
     }
 
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
+        mediaPlayer?.release()
     }
 
     private fun updateStateWithCurrentPosition() {
+//        Log.d("Kuch toh debug", "Time: ${_currentPosition.value}")
         val currentPosition: Long = mediaPlayer?.currentPosition?.toLong() ?: 0L
         _currentPosition.value = currentPosition
     }
@@ -116,22 +141,22 @@ class MediaViewModel @Inject constructor(
         when (event) {
             // Play Next Audio
             is MediaEvent.NextAudio -> {
-                val newPosition = (_currentPosition.value + 1) % _audioList.value.size
+                val newPosition = (_currentMediaIndex.value + 1) % _audioList.value.size
                 onEvent(
                     MediaEvent.SelectMedia(
                         context = event.context,
-                        mediaIndex = newPosition.toInt()
+                        mediaIndex = newPosition
                     )
                 )
             }
 
             // Play Previous Audio
             is MediaEvent.PreviousAudio -> {
-                val newPosition = (_currentPosition.value - 1) % _audioList.value.size
+                val newPosition = (_currentMediaIndex.value - 1) % _audioList.value.size
                 onEvent(
                     MediaEvent.SelectMedia(
                         context = event.context,
-                        mediaIndex = newPosition.toInt()
+                        mediaIndex = newPosition
                     )
                 )
             }
@@ -148,6 +173,7 @@ class MediaViewModel @Inject constructor(
 
             // Play Audio
             MediaEvent.PlayAudio -> {
+//                Log.d("Kuch toh debug", "Current Position: ${_currentPosition.value}")
                 _state.update {
                     it.copy(
                         isPlaying = true
@@ -158,6 +184,8 @@ class MediaViewModel @Inject constructor(
 
             // Select Media
             is MediaEvent.SelectMedia -> {
+//                Log.d("Kuch toh debug", "Media selected")
+                _currentMediaIndex.value = event.mediaIndex
                 _state.update {
                     it.copy(
                         currentMedia = event.mediaIndex,
@@ -181,17 +209,14 @@ class MediaViewModel @Inject constructor(
                         isMediaPlayerPrepared = true
                     }
                     setOnCompletionListener {
-                        release()
-                        isMediaPlayerPrepared = false
+//                        release()
+//                        isMediaPlayerPrepared = false
+                        onEvent(MediaEvent.NextAudio(context = event.context))
                     }
                 }
 
-                getMediaAmplitudes(event.context, audioPath)
-                _state.update {
-                    it.copy(
-                        isPlaying = true
-                    )
-                }
+//                getMediaAmplitudes(event.context, audioPath)
+                _state.update { it.copy(isPlaying = true) }
                 Log.d("Kuch toh debug", "MediaPlayer working just fine")
             }
             // Search Media
@@ -215,7 +240,7 @@ class MediaViewModel @Inject constructor(
     }
 
     @RequiresApi(Build.VERSION_CODES.Q)
-    fun initializeListIfNeeded(context: Context) {
+    suspend fun initializeListIfNeeded(context: Context) {
         if (_initialized) return
         val mediaFiles = ArrayList<MediaItem>()
         if (checkPermission(context)) {
@@ -229,11 +254,12 @@ class MediaViewModel @Inject constructor(
         }
 
 //        Log.d("Kuch toh debug", "Hello $mediaFiles")
-        _audioList.value = mediaFiles
+//        _audioList.value = mediaFiles
+//        _audioList.value = dao.getAllMediaByTitle().first()
         _initialized = true
     }
 
-    private fun queryMediaStore(
+    private suspend fun queryMediaStore(
         context: Context,
         volumeName: String,
         mediaFiles: MutableList<MediaItem>
@@ -279,8 +305,11 @@ class MediaViewModel @Inject constructor(
                 val mimeType = cursor.getString(mimetypeColumn)
                 val uri: Uri = ContentUris.withAppendedId(collection, id)
 
-                if (mimeType.equals("audio/mpeg"))
-                    mediaFiles.add(MediaItem(id, title, null, uri, artist, dateAddedId, duration))
+                if (mimeType.equals("audio/mpeg")) {
+//                    mediaFiles.add(MediaItem(id, title, uri, artist, dateAddedId, duration))
+                    if (!dao.exists(id))
+                        dao.saveMedia(MediaItem(id, title, uri, artist, dateAddedId, duration))
+                }
             }
         }
     }
@@ -338,15 +367,16 @@ class MediaViewModel @Inject constructor(
     }
 
     private fun loadBitmapIfNeeded(context: Context, index: Int) {
-        if (_audioList.value[index].cover != null) return
+//        if (_audioList.value[index].cover != null) return
         // if this is gonna lag during scrolling, you can move it on a background thread
         _backgroundScope.launch {
             val bitmap = getAlbumArt(context, _audioList.value[index].contentUri)
-            Log.d("Kuch toh debug", "Bitmap loaded: $bitmap")
+//            Log.d("Kuch toh debug", "Bitmap loaded: $bitmap")
             updateBackgroundColor(bitmap)
             val mediaFiles = _audioList.value.toMutableList()
-            mediaFiles[index] = mediaFiles[index].copy(cover = bitmap)
-            _audioList.value = mediaFiles
+//            mediaFiles[index] = mediaFiles[index].copy(cover = bitmap)
+            _cover.value = bitmap
+//            _audioList.value = mediaFiles
         }
 
 //        _backgroundScope.launch {
@@ -365,7 +395,7 @@ class MediaViewModel @Inject constructor(
         try {
             mmr.setDataSource(context, uri)
             val data = mmr.embeddedPicture
-            Log.d("Kuch toh debug", "Is Data null?? ${data == null}")
+//            Log.d("Kuch toh debug", "Is Data null?? ${data == null}")
             return if (data != null) {
                 BitmapFactory.decodeByteArray(data, 0, data.size)
             } else {

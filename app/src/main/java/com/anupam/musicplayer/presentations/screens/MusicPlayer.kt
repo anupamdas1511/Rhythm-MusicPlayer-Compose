@@ -1,10 +1,8 @@
 package com.anupam.musicplayer.presentations.screens
 
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.DefaultMarqueeIterations
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -22,18 +20,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PauseCircle
-import androidx.compose.material.icons.filled.PauseCircleFilled
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.PlayCircleFilled
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -47,7 +38,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -56,23 +46,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
@@ -85,21 +68,18 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import androidx.palette.graphics.Palette
 import com.anupam.musicplayer.NavigationItem
 import com.anupam.musicplayer.R
-import com.anupam.musicplayer.Screen
 import com.anupam.musicplayer.data.MediaState
+import com.anupam.musicplayer.presentations.components.CustomSlider
 import com.anupam.musicplayer.presentations.components.GlowingCard
 import com.anupam.musicplayer.presentations.components.drawNeonStroke
 import com.anupam.musicplayer.utils.formatTime
-import com.anupam.musicplayer.utils.getDominantColor
 import com.anupam.musicplayer.viewmodels.MediaEvent
-import com.smarttoolfactory.slider.ColorfulSlider
+//import com.smarttoolfactory.slider.ColorfulSlider
 //import com.linc.audiowaveform.AudioWaveform
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import java.time.Duration
 
 @Composable
 fun TopAppBar() {
@@ -164,8 +144,7 @@ fun SongDescription(title: String, artist: String) {
 fun PlayerSlider(
     onEvent: (MediaEvent) -> Unit,
     duration: Long = 100,
-    currentPosition: Long = 30,
-    amplitudes: List<Int> = listOf(1,2,2,2,3,3,2,2,1,2,3,2,2,3)
+    currentPosition: Long = 30
 ) {
     var sliderPosition by remember {
         mutableFloatStateOf(currentPosition.toFloat() / duration)
@@ -177,9 +156,6 @@ fun PlayerSlider(
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        val interactionSource = remember {
-            MutableInteractionSource()
-        }
 //        Slider(
 //            value = sliderPosition,
 //            onValueChange = {
@@ -210,13 +186,24 @@ fun PlayerSlider(
 //                )
 //            }
 //        )
-        ColorfulSlider(
+        Slider(
             value = sliderPosition,
-            onValueChange = { it ->
+            onValueChange = {
                 sliderPosition = it
                 onEvent(MediaEvent.SeekMedia((it * duration).toInt()))
             }
         )
+//        CustomSlider(value = sliderPosition, onValueChange = {
+//            sliderPosition = it
+//            onEvent(MediaEvent.SeekMedia((it * duration).toInt()))
+//        })
+//        ColorfulSlider(
+//            value = sliderPosition,
+//            onValueChange = { it ->
+//                sliderPosition = it
+//                onEvent(MediaEvent.SeekMedia((it * duration).toInt()))
+//            }
+//        )
 //        var waveformProgress by remember { mutableStateOf(0F) }
 //        AudioWaveform(
 //            amplitudes = amplitudes,
@@ -305,7 +292,7 @@ fun PlayerButtons(
             modifier = Modifier
                 .size(playerButtonSize * 1.2f)
                 .drawWithContent {
-                    drawNeonStroke(radius = 80.dp, color = Color.Blue)
+                    drawNeonStroke(radius = 100.dp, color = Color.Blue)
                     drawContent()
                 }
         ) {
@@ -353,7 +340,7 @@ fun MusicPlayer(
     val context = LocalContext.current
     val state = mediaState.collectAsState(initial = MediaState())
     var duration by remember { mutableLongStateOf(100L) }
-    var currentPosition by remember { mutableLongStateOf(40L) }
+    var currentPosition by remember { mutableLongStateOf(state.value.currentPosition) }
 
     if (state.value.currentMedia != null) {
         LaunchedEffect(key1 = state.value.mediaFiles[state.value.currentMedia!!].duration) {
@@ -366,7 +353,7 @@ fun MusicPlayer(
 
     val defaultBackground = BitmapFactory.decodeResource(context.resources, R.drawable.musics)
     val image = if (state.value.currentMedia != null) {
-        state.value.mediaFiles[state.value.currentMedia!!].cover ?: defaultBackground
+        state.value.cover ?: defaultBackground
     } else defaultBackground
 
     Scaffold (
@@ -428,10 +415,9 @@ fun MusicPlayer(
                 modifier = Modifier.weight(10f)
             ) {
                 PlayerSlider(
-                    duration = duration,
-                    currentPosition = currentPosition,
                     onEvent = onEvent,
-                    amplitudes = state.value.amplitudes
+                    duration = duration,
+                    currentPosition = currentPosition
                 )
                 Spacer(modifier = Modifier.height(20.dp))
                 PlayerButtons(

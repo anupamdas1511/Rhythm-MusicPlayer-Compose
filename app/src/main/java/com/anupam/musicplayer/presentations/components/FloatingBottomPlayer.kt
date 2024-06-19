@@ -91,7 +91,7 @@ fun FloatingBottomPlayer(
     PlayerUI(
         modifier = modifier,
         image = if (state.currentMedia != null) {
-            state.mediaFiles[state.currentMedia!!].cover ?: defaultBackground
+            state.cover ?: defaultBackground
         } else defaultBackground,
         dominantColor = state.backgroundColor,
         title = state.title,
