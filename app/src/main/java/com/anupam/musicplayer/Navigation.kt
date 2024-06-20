@@ -20,9 +20,9 @@ fun Navigation() {
     val context = LocalContext.current
     val mediaViewModel: MediaViewModel = viewModel()
 
-    LaunchedEffect(Unit) {
-        mediaViewModel.initializeListIfNeeded(context)
-    }
+//    LaunchedEffect(Unit) {
+//        mediaViewModel.initializeListIfNeeded(context)
+//    }
 
     //  !! It lags too much like crazy !!
 //    LaunchedEffect(key1 = null) {

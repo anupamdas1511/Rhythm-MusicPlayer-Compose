@@ -19,6 +19,7 @@ import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.provider.Settings
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -227,6 +228,15 @@ class MediaViewModel @Inject constructor(
             is MediaEvent.SeekMedia -> {
                 _currentPosition.value = event.position.toLong()
                 mediaPlayer?.seekTo(_currentPosition.value.toInt())
+            }
+
+            // Scan Storage for Media
+            is MediaEvent.ScanMedia -> {
+                viewModelScope.launch {
+                    Toast.makeText(event.context, "Scanning for Media", Toast.LENGTH_LONG).show()
+                    initializeListIfNeeded(event.context)
+                    Toast.makeText(event.context, "Scanning Completed", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }

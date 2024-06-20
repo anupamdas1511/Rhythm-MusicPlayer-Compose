@@ -87,6 +87,14 @@ fun MusicDashboard(
                     title = { Text(text = "MusicPlayer") },
                     actions = {
                         IconButton(onClick = {
+                            onEvent(MediaEvent.ScanMedia(context = context))
+                        }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.scanner),
+                                contentDescription = null
+                            )
+                        }
+                        IconButton(onClick = {
 //                            if (searchState.isSearchModeEnabled) searchState.enableSearchMode() else searchState.disableSearchMode()
                         }) {
                             Icon(

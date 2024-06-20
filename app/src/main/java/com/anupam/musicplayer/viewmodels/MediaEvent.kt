@@ -11,4 +11,5 @@ sealed class MediaEvent {
     data class PreviousAudio(val context: Context): MediaEvent()
     data class SearchMedia(val query: String): MediaEvent()
     data class SeekMedia(val position: Int): MediaEvent()
+    data class ScanMedia(val context: Context): MediaEvent()
 }
