@@ -16,7 +16,8 @@ data class MediaItem(
     val contentUri: Uri,
     val artist: String?,
     val dateAdded: Long,
-    val duration: Long
+    val duration: Long,
+    val favorite: Boolean = false
 )
 
 class UriConverters {

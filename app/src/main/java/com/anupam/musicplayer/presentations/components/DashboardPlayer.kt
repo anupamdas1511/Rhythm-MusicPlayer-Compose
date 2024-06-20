@@ -15,10 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.sharp.Pause
 import androidx.compose.material.icons.sharp.PlayArrow
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -135,6 +138,13 @@ fun DashboardPlayer(
         Spacer(modifier = Modifier.weight(1f))
         Column {
             Spacer(modifier = Modifier.weight(1f))
+            IconButton(onClick = { /*TODO*/ }) {
+                Icon(
+                    imageVector = Icons.Default.Shuffle,
+                    contentDescription = null
+                )
+            }
+            Spacer(modifier = Modifier.weight(2f))
             val playerButtonSize = 40.dp
             Button(
                 onClick = {
@@ -162,7 +172,7 @@ fun DashboardPlayer(
                         .semantics { role = Role.Button }
                 )
             }
-            Spacer(modifier = Modifier.weight(.2f))
+            Spacer(modifier = Modifier.weight(1f))
         }
         Spacer(modifier = Modifier.weight(1f))
     }

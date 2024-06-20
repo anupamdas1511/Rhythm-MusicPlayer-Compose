@@ -21,8 +21,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Replay10
@@ -88,7 +91,7 @@ fun TopAppBar() {
     ) {
         IconButton(onClick = { /*TODO*/ }) {
             Icon(
-                imageVector = Icons.Default.ArrowBack,
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                 contentDescription = "Back Arrow",
                 tint = Color.White
             )
@@ -108,31 +111,50 @@ fun TopAppBar() {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun SongDescription(title: String, artist: String) {
-    Column (
+fun SongDescription(
+    title: String,
+    artist: String,
+    state: MediaState,
+    onEvent: (MediaEvent) -> Unit
+) {
+    Row (
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .padding(horizontal = 10.dp)
-                .basicMarquee()
-        )
-
-        CompositionLocalProvider {
+        Column(
+            modifier = Modifier.weight(.2f)
+        ) {
             Text(
-                text = artist,
-                style = MaterialTheme.typography.titleMedium,
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 color = Color.White,
+                fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .padding(horizontal = 10.dp)
                     .basicMarquee()
+            )
+
+            CompositionLocalProvider {
+                Text(
+                    text = artist,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1,
+                    color = Color.White,
+                    modifier = Modifier
+                        .padding(horizontal = 10.dp)
+                        .basicMarquee()
+                )
+            }
+        }
+
+        IconButton(onClick = {
+            onEvent(MediaEvent.AddToFavorite)
+        }) {
+            Icon(
+                imageVector = if (state.favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = null,
+                tint = Color.White
             )
         }
     }
@@ -408,7 +430,7 @@ fun MusicPlayer(
 //                        .weight(10f)
 //            )
             Spacer(modifier = Modifier.height(30.dp))
-            SongDescription(title = state.value.title, artist = state.value.artist)
+            SongDescription(title = state.value.title, artist = state.value.artist, state = state.value, onEvent = onEvent)
             Spacer(modifier = Modifier.height(35.dp))
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,

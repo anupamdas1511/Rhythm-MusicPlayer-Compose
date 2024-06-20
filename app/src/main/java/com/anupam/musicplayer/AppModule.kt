@@ -3,6 +3,7 @@ package com.anupam.musicplayer
 import android.content.ContentResolver
 import android.content.Context
 import androidx.room.Room
+import com.anupam.musicplayer.db.MIGRATION_1_2
 import com.anupam.musicplayer.db.MediaDao
 import com.anupam.musicplayer.db.MediaDatabase
 import dagger.Module
@@ -23,11 +24,12 @@ class AppModule {
 
     @Provides
     @Singleton
-    fun provideAlarmDatabase(@ApplicationContext appContext: Context): MediaDatabase {
+    fun provideMediaDatabase(@ApplicationContext appContext: Context): MediaDatabase {
         return Room.databaseBuilder(
             appContext,
             MediaDatabase::class.java,
             "media"
-        ).build()
+        )
+            .addMigrations(MIGRATION_1_2).build()
     }
 }

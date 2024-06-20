@@ -68,6 +68,7 @@ class MediaViewModel @Inject constructor(
     private var _currentMediaIndex = MutableStateFlow(0)
     private var _backgroundColor = MutableStateFlow(Color.Black)
     private var _cover = MutableStateFlow<Bitmap?>(null)
+//    private var _isFavorite = MutableStateFlow(_audioList.value[_currentMediaIndex.value].favorite)
 
     private var _amplitudes = MutableStateFlow<List<Int>>(emptyList())
 
@@ -82,7 +83,8 @@ class MediaViewModel @Inject constructor(
             mediaFiles = audioList,
             currentPosition = currentPosition,
             backgroundColor = backgroundColor,
-            cover = cover
+            cover = cover,
+            favorite = if (audioList.isEmpty()) false else audioList[_currentMediaIndex.value].favorite
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MediaState())
 
@@ -237,6 +239,19 @@ class MediaViewModel @Inject constructor(
                     initializeListIfNeeded(event.context)
                     Toast.makeText(event.context, "Scanning Completed", Toast.LENGTH_LONG).show()
                 }
+            }
+
+            MediaEvent.AddToFavorite -> {
+                viewModelScope.launch {
+                    val currentMediaCopy = _audioList.value[_currentMediaIndex.value].copy(
+                        favorite = !_audioList.value[_currentMediaIndex.value].favorite
+                    )
+
+                    dao.saveMedia(currentMediaCopy)
+                }
+                _state.update { it.copy(
+                    favorite = !_state.value.favorite
+                ) }
             }
         }
     }

@@ -15,9 +15,10 @@ data class MediaState(
     val artist: String = "",
     val mimeType: String = "",
     var isPlaying: Boolean = false,
-    var currentPosition: Long = 0L,
+    var currentPosition: Long = 0L, // * For progress bar slider
     var previousAudio: Uri? = null,
     var nextAudio: Queue<Uri> = LinkedList(),
     var mediaFiles: List<MediaItem> = emptyList(),
+    var favorite: Boolean = false,
     var amplitudes: List<Int> = emptyList() // ? not needed yet
 )
