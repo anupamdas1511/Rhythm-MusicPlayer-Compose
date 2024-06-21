@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.QueueMusic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.sharp.MusicNote
@@ -206,6 +207,10 @@ fun MusicItem(
             )
         }
 //        Spacer(modifier = Modifier.weight(1f))
+        if (audio.favorite) {
+            Icon(imageVector = Icons.Default.Favorite, contentDescription = null)
+        }
+
         IconButton(onClick = {
             // todo: unimplemented
         }) {
@@ -236,29 +241,28 @@ fun MusicItem(
 }
 
 
-//@Preview
-//@Composable
-//private fun MusicItemPreview() {
-//    MusicItem(
-//        audio = MediaItem(
-//            0,
-//            "This is a very long text that will be clipped if exceeds the fixed boundary",
-//            null,
-//            Uri.EMPTY,
-//            "Anupam Das",
-//            12345,
-//            0L
-//        ),
-//        onClick = {}
-//    )
-//}
-
 @Preview
 @Composable
-private fun MediaDashboardPreview() {
-    MusicDashboard(
-        mediaState = flowOf(MediaState()),
-        onEvent = {},
-        navController = rememberNavController()
+private fun MusicItemPreview() {
+    MusicItem(
+        audio = MediaItem(
+            0,
+            "This is a very long text that will be clipped if exceeds the fixed boundary",
+            Uri.EMPTY,
+            "Anupam Das",
+            12345,
+            0L
+        ),
+        onClick = {}
     )
 }
+
+//@Preview
+//@Composable
+//private fun MediaDashboardPreview() {
+//    MusicDashboard(
+//        mediaState = flowOf(MediaState()),
+//        onEvent = {},
+//        navController = rememberNavController()
+//    )
+//}
