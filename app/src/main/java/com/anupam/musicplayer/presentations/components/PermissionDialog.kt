@@ -67,3 +67,24 @@ class StoragePermissionTextProvider: PermissionTextProvider {
         }
     }
 }
+
+class NotificationPermissionTextProvider: PermissionTextProvider {
+    override fun getDescription(isPermanentlyDeclined: Boolean): String {
+        return if (isPermanentlyDeclined) {
+            "It seems you have permanently declined Notification Permission. " +
+                    "You can go to the app settings to grant it"
+        } else {
+            "This app requires the permission for showing Notification Media Playback"
+        }
+    }
+}
+
+class ForegroundServicePermissionTextProvider : PermissionTextProvider {
+    override fun getDescription(isPermanentlyDeclined: Boolean): String {
+        return if (isPermanentlyDeclined) {
+            "It seems you have permanently declined Foreground Service Permission. You can go to the app settings to grant it."
+        } else {
+            "This app requires the permission for running a foreground service."
+        }
+    }
+}

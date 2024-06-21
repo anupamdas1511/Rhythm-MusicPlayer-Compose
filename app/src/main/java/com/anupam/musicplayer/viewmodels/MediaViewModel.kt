@@ -2,6 +2,7 @@ package com.anupam.musicplayer.viewmodels
 
 import android.Manifest
 import android.app.Activity
+import android.app.Application
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.Context
@@ -21,10 +22,12 @@ import android.provider.Settings
 import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.palette.graphics.Palette
@@ -32,6 +35,7 @@ import com.anupam.musicplayer.R
 import com.anupam.musicplayer.data.MediaState
 import com.anupam.musicplayer.data.MediaItem
 import com.anupam.musicplayer.db.MediaDao
+import com.anupam.musicplayer.services.PlayerNotificationService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -52,8 +56,10 @@ import javax.inject.Inject
 @HiltViewModel
 class MediaViewModel @Inject constructor(
     private val dao: MediaDao,
-    private val contentResolver: ContentResolver
-) : ViewModel() {
+    private val contentResolver: ContentResolver,
+    application: Application
+) : AndroidViewModel(application) {
+    val visiblePermissionDialogQueue = mutableStateListOf<String>()
     private val _audioList: StateFlow<List<MediaItem>> = dao.getAllMediaByTitle()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 //    val audioList: StateFlow<List<MediaItem>> = _audioList
@@ -94,6 +100,25 @@ class MediaViewModel @Inject constructor(
         startPositionUpdateCoroutine()
     }
 
+    fun startMediaPlayback() {
+        if (_audioList.value.isEmpty()) return
+        Log.d("kuch toh debug", "Is it working")
+        _audioList.value[_currentMediaIndex.value].let {
+            val context = getApplication<Application>().applicationContext
+            val intent = Intent(context, PlayerNotificationService::class.java).apply {
+                putExtra("mediaTitle", it.name)
+                putExtra("mediaArtist", it.artist)
+            }
+            context.startService(intent)
+        }
+    }
+
+    fun stopMediaPlayback() {
+        val context = getApplication<Application>().applicationContext
+        val intent = Intent(context, PlayerNotificationService::class.java)
+        context.stopService(intent)
+    }
+
     private fun initMediaPlayer() {
         if (mediaPlayer == null) {
             mediaPlayer = MediaPlayer()
@@ -130,6 +155,7 @@ class MediaViewModel @Inject constructor(
         super.onCleared()
         timerJob?.cancel()
         mediaPlayer?.release()
+        stopMediaPlayback()
     }
 
     private fun updateStateWithCurrentPosition() {
@@ -443,6 +469,20 @@ class MediaViewModel @Inject constructor(
         _backgroundColor.value = Color(colorInt)
     }
 
+    fun onPermissionEvent(event: PermissionEvent) {
+        when (event) {
+            is PermissionEvent.OnPermissionResult -> {
+                if (event.isGranted) {
+                    visiblePermissionDialogQueue.add(event.permission)
+                }
+            }
+
+            PermissionEvent.DismissPermissionDialog -> {
+                visiblePermissionDialogQueue.removeFirst()
+            }
+        }
+    }
+
     private fun checkPermission(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Environment.isExternalStorageManager()
@@ -466,6 +506,19 @@ class MediaViewModel @Inject constructor(
                 arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
                 0
             )
+        }
+    }
+
+    fun dismissPermissionDialog() {
+        visiblePermissionDialogQueue.removeLast()
+    }
+
+    fun onPermissionResult(
+        permission: String,
+        isGranted: Boolean
+    ) {
+        if (!isGranted) {
+            visiblePermissionDialogQueue.add(0, permission)
         }
     }
 }
