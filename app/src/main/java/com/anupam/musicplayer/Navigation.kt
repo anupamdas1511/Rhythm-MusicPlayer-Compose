@@ -6,11 +6,13 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.anupam.musicplayer.presentations.screens.MainScreen
 import com.anupam.musicplayer.presentations.screens.MusicDashboard
 import com.anupam.musicplayer.presentations.screens.MusicPlayer
 import com.anupam.musicplayer.presentations.screens.PermissionScreen
@@ -53,7 +55,7 @@ fun Navigation() {
             )
         }
         composable(NavigationItem.Dashboard.route) {
-            MusicDashboard(
+            MainScreen(
                 mediaState = mediaViewModel.state,
                 onEvent = mediaViewModel::onEvent,
                 navController = navController

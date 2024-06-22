@@ -60,7 +60,8 @@ fun DashboardPlayer(
     modifier: Modifier = Modifier,
     state: MediaState,
     onEvent: (MediaEvent) -> Unit,
-    navController: NavController
+    navController: NavController,
+    isTabletMode: Boolean = false
 ) {
     val context = LocalContext.current
     var duration by remember { mutableLongStateOf(100L) }
@@ -93,10 +94,9 @@ fun DashboardPlayer(
                     drawNeonStroke(radius = 200.dp, color = state.backgroundColor)
                     drawContent()
                 }
-//                .clip(CircleShape)
                 .clickable {
-                    // TODO: Navigate to Music Player
-                    navController.navigate(NavigationItem.Player.route)
+                    if (!isTabletMode)
+                        navController.navigate(NavigationItem.Player.route)
                 }
         ) {
             Image(
@@ -136,43 +136,52 @@ fun DashboardPlayer(
             }
         }
         Spacer(modifier = Modifier.weight(1f))
-        Column {
-            Spacer(modifier = Modifier.weight(1f))
-            IconButton(onClick = { /*TODO*/ }) {
-                Icon(
-                    imageVector = Icons.Default.Shuffle,
-                    contentDescription = null
-                )
-            }
-            Spacer(modifier = Modifier.weight(2f))
-            val playerButtonSize = 40.dp
-            Button(
-                onClick = {
-                    onEvent(if (state.isPlaying) MediaEvent.PauseAudio else MediaEvent.PlayAudio)
-                },
-                shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Blue
-                ),
-                contentPadding = PaddingValues(),
+        DashboardPlayerControls(state = state, onEvent = onEvent)
+        Spacer(modifier = Modifier.weight(1f))
+    }
+}
+
+@Composable
+fun DashboardPlayerControls(
+    modifier: Modifier = Modifier,
+    state: MediaState,
+    onEvent: (MediaEvent) -> Unit
+) {
+    Column {
+        Spacer(modifier = Modifier.weight(1f))
+        IconButton(onClick = { /*TODO*/ }) {
+            Icon(
+                imageVector = Icons.Default.Shuffle,
+                contentDescription = null
+            )
+        }
+        Spacer(modifier = Modifier.weight(2f))
+        val playerButtonSize = 40.dp
+        Button(
+            onClick = {
+                onEvent(if (state.isPlaying) MediaEvent.PauseAudio else MediaEvent.PlayAudio)
+            },
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.Blue
+            ),
+            contentPadding = PaddingValues(),
+            modifier = Modifier
+                .size(playerButtonSize * 1.4f)
+                .drawWithContent {
+                    drawNeonStroke(radius = 100.dp, color = Color.Blue)
+                    drawContent()
+                }
+        ) {
+            Image(
+                imageVector = if (state.isPlaying) Icons.Sharp.Pause else Icons.Sharp.PlayArrow,
+                contentDescription = "Play",
+                contentScale = ContentScale.Fit,
+                colorFilter = ColorFilter.tint(Color.White),
                 modifier = Modifier
-                    .size(playerButtonSize * 1.4f)
-                    .drawWithContent {
-                        drawNeonStroke(radius = 100.dp, color = Color.Blue)
-                        drawContent()
-                    }
-            ) {
-                Image(
-                    imageVector = if (state.isPlaying) Icons.Sharp.Pause else Icons.Sharp.PlayArrow,
-                    contentDescription = "Play",
-                    contentScale = ContentScale.Fit,
-                    colorFilter = ColorFilter.tint(Color.White),
-                    modifier = Modifier
-                        .size(playerButtonSize)
-                        .semantics { role = Role.Button }
-                )
-            }
-            Spacer(modifier = Modifier.weight(1f))
+                    .size(playerButtonSize)
+                    .semantics { role = Role.Button }
+            )
         }
         Spacer(modifier = Modifier.weight(1f))
     }

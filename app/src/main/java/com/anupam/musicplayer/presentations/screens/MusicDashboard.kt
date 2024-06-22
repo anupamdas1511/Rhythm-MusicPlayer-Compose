@@ -69,7 +69,8 @@ import kotlinx.coroutines.flow.flowOf
 fun MusicDashboard(
     mediaState: Flow<MediaState>,
     onEvent: (MediaEvent) -> Unit,
-    navController: NavController
+    navController: NavController,
+    isTabletMode: Boolean = false
 ) {
     val state = mediaState.collectAsState(initial = MediaState())
     val context = LocalContext.current
@@ -95,14 +96,14 @@ fun MusicDashboard(
                                 contentDescription = null
                             )
                         }
-                        IconButton(onClick = {
-//                            if (searchState.isSearchModeEnabled) searchState.enableSearchMode() else searchState.disableSearchMode()
-                        }) {
-                            Icon(
-                                imageVector = Icons.Filled.Search,
-                                contentDescription = null
-                            )
-                        }
+//                        IconButton(onClick = {
+////                            if (searchState.isSearchModeEnabled) searchState.enableSearchMode() else searchState.disableSearchMode()
+//                        }) {
+//                            Icon(
+//                                imageVector = Icons.Filled.Search,
+//                                contentDescription = null
+//                            )
+//                        }
                     },
 //                    modifier = Modifier
 //                        .onGloballyPositioned { layoutCoordinates ->
@@ -138,7 +139,8 @@ fun MusicDashboard(
             DashboardPlayer(
                 state = state.value,
                 onEvent = onEvent,
-                navController = navController
+                navController = navController,
+                isTabletMode = isTabletMode
             )
 
             Text(
