@@ -44,7 +44,7 @@ fun Navigation() {
 //    LaunchedEffect(key1 = null) {
 //        mediaViewModel.loadBitmapIfNeeded(context)
 //    }
-//    ? Log.d("Kuch toh debug", "Hello " + mediaViewModel.state.collectAsState(MediaState()).value.mediaFiles)
+
     NavHost(navController = navController, startDestination = NavigationItem.PermissionScreen.route) {
         composable(NavigationItem.PermissionScreen.route) {
             PermissionScreen(

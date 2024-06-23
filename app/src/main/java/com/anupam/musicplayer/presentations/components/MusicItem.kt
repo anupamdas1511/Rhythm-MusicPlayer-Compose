@@ -56,7 +56,7 @@ fun MusicItem(
                 overflow = TextOverflow.Clip
             )
         }
-//        Spacer(modifier = Modifier.weight(1f))
+
         if (audio.favorite) {
             Icon(imageVector = Icons.Default.Favorite, contentDescription = null)
         }

@@ -35,6 +35,7 @@ import com.anupam.musicplayer.R
 import com.anupam.musicplayer.data.MediaState
 import com.anupam.musicplayer.data.MediaItem
 import com.anupam.musicplayer.db.MediaDao
+import com.anupam.musicplayer.modes.MediaListMode
 import com.anupam.musicplayer.services.PlayerNotificationService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -78,6 +79,8 @@ class MediaViewModel @Inject constructor(
 
     private var mediaPlayer: MediaPlayer? = null
     private var isMediaPlayerPrepared = false
+    private var currentListMode: MediaListMode = MediaListMode.ALL_SONGS
+    private var currentListSize: Int = _audioList.value.size
     private var _currentPosition = MutableStateFlow(0L)
     private var _currentMediaIndex = MutableStateFlow(0)
     private var _backgroundColor = MutableStateFlow(Color.Black)
@@ -180,22 +183,24 @@ class MediaViewModel @Inject constructor(
         when (event) {
             // Play Next Audio
             is MediaEvent.NextAudio -> {
-                val newPosition = (_currentMediaIndex.value + 1) % _audioList.value.size
+                val newPosition = (_currentMediaIndex.value + 1) % currentListSize
                 onEvent(
                     MediaEvent.SelectMedia(
                         context = event.context,
-                        mediaIndex = newPosition
+                        mediaIndex = newPosition,
+                        mode = currentListMode
                     )
                 )
             }
 
             // Play Previous Audio
             is MediaEvent.PreviousAudio -> {
-                val newPosition = (_currentMediaIndex.value - 1) % _audioList.value.size
+                val newPosition = (_currentMediaIndex.value - 1) % currentListSize
                 onEvent(
                     MediaEvent.SelectMedia(
                         context = event.context,
-                        mediaIndex = newPosition
+                        mediaIndex = newPosition,
+                        mode = currentListMode
                     )
                 )
             }
@@ -222,35 +227,39 @@ class MediaViewModel @Inject constructor(
 
             // Select Media
             is MediaEvent.SelectMedia -> {
+                currentListMode = event.mode
                 _currentMediaIndex.value = event.mediaIndex
-                _state.update {
-                    it.copy(
-                        currentMedia = event.mediaIndex,
-                        title = _audioList.value[event.mediaIndex].name,
-                        artist = _audioList.value[event.mediaIndex].artist ?: "Unknown Artist"
-                    )
+                val audioPath: String?
+                when (event.mode) {
+                    MediaListMode.ALL_SONGS -> {
+                        currentListSize = _audioList.value.size
+                        _state.update {
+                            it.copy(
+                                currentMedia = event.mediaIndex,
+                                title = _audioList.value[event.mediaIndex].name,
+                                artist = _audioList.value[event.mediaIndex].artist ?: "Unknown Artist"
+                            )
+                        }
+                        loadBitmapIfNeeded(context = event.context, index = event.mediaIndex)
+
+                        audioPath = getMediaFile(_audioList.value[event.mediaIndex].id)
+
+                    }
+                    MediaListMode.FAVORITE_SONGS -> {
+                        currentListSize = _favoriteList.value.size
+                        _state.update {
+                            it.copy(
+                                currentMedia = event.mediaIndex,
+                                title = _favoriteList.value[event.mediaIndex].name,
+                                artist = _favoriteList.value[event.mediaIndex].artist ?: "Unknown Artist"
+                            )
+                        }
+                        loadBitmapIfNeeded(context = event.context, index = event.mediaIndex)
+
+                        audioPath = getMediaFile(_favoriteList.value[event.mediaIndex].id)
+                    }
                 }
-                loadBitmapIfNeeded(context = event.context, index = event.mediaIndex)
-
-                val audioPath = getMediaFile(_audioList.value[event.mediaIndex].id)
-
-                mediaPlayer?.apply {
-                    if (isMediaPlayerPrepared || isPlaying) {
-                        stop()
-                        reset()
-                    }
-                    setDataSource(audioPath)
-                    prepareAsync()
-                    setOnPreparedListener {
-                        start()
-                        isMediaPlayerPrepared = true
-                    }
-                    setOnCompletionListener {
-                        onEvent(MediaEvent.NextAudio(context = event.context))
-                    }
-                }
-
-//                getMediaAmplitudes(event.context, audioPath)
+                updateMediaPlayerOnSelection(context = event.context, audioPath = audioPath)
                 _state.update { it.copy(isPlaying = true) }
             }
             is MediaEvent.SearchSelectMedia -> {
@@ -260,7 +269,7 @@ class MediaViewModel @Inject constructor(
                         index = mediaIndex
                     }
                 }
-                onEvent(MediaEvent.SelectMedia(index, event.context))
+                onEvent(MediaEvent.SelectMedia(index, event.context, MediaListMode.ALL_SONGS))
             }
             is MediaEvent.QueryChange -> {
                 _query.value = event.query
@@ -308,6 +317,27 @@ class MediaViewModel @Inject constructor(
                 ) }
             }
 
+        }
+    }
+
+    private fun updateMediaPlayerOnSelection(
+        context: Context,
+        audioPath: String?
+    ) {
+        mediaPlayer?.apply {
+            if (isMediaPlayerPrepared || isPlaying) {
+                stop()
+                reset()
+            }
+            setDataSource(audioPath)
+            prepareAsync()
+            setOnPreparedListener {
+                start()
+                isMediaPlayerPrepared = true
+            }
+            setOnCompletionListener {
+                onEvent(MediaEvent.NextAudio(context = context))
+            }
         }
     }
 

@@ -2,7 +2,6 @@ package com.anupam.musicplayer.presentations.screens
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.pager.HorizontalPager
@@ -29,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewScreenSizes
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.anupam.musicplayer.data.MediaState
@@ -82,7 +80,7 @@ fun MainScreen(
             selectedTabRow = pagerState.currentPage
     }
     Column (
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
     ) {
         HorizontalPager(
@@ -117,10 +115,12 @@ fun MainScreen(
                         Text(text = item.title)
                     },
                     icon = {
-                        Icon(
-                            imageVector = if (index == selectedTabRow) item.selectedIcon else item.unselectedIcon,
-                            contentDescription = item.title
-                        )
+                        (if (index == selectedTabRow) item.selectedIcon else item.unselectedIcon)?.let {
+                            Icon(
+                                imageVector = it,
+                                contentDescription = item.title
+                            )
+                        }
                     }
                 )
             }
