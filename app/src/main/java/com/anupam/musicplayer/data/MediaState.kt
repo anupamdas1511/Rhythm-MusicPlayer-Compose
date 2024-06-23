@@ -19,6 +19,7 @@ data class MediaState(
     var previousAudio: Uri? = null,
     var nextAudio: Queue<Uri> = LinkedList(),
     var mediaFiles: List<MediaItem> = emptyList(),
+    var favoriteMediaFiles: List<MediaItem> = emptyList(),
     var searchedMediaFiles: List<MediaItem> = emptyList(),
     var favorite: Boolean = false,
     var amplitudes: List<Int> = emptyList() // ? not needed yet

@@ -68,8 +68,9 @@ class MediaViewModel @Inject constructor(
     private val _audioList: StateFlow<List<MediaItem>> = dao.getAllMediaByTitle()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     private val _searchAudioList = MutableStateFlow<List<MediaItem>>(emptyList())
+    private val _favoriteList: StateFlow<List<MediaItem>> = dao.getAllFavoriteMedia()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-//    val audioList: StateFlow<List<MediaItem>> = _audioList
     private var _initialized = false
     private val _backgroundScope = viewModelScope.plus(Dispatchers.Default)
     private var _isSDCardAvailable = false
@@ -83,14 +84,13 @@ class MediaViewModel @Inject constructor(
     private var _cover = MutableStateFlow<Bitmap?>(null)
     private var _query = MutableStateFlow("")
 
-    private var _amplitudes = MutableStateFlow<List<Int>>(emptyList())
 
 //    private val _videoList = MutableStateFlow<List<MediaItem>>(emptyList())
 //    val videoList: StateFlow<List<MediaItem>> = _videoList
 
     private val _state = MutableStateFlow(MediaState())
     val state = combine(
-        _state, _audioList, _currentPosition, _backgroundColor, _cover, _searchAudioList
+        _state, _audioList, _currentPosition, _backgroundColor, _cover, _searchAudioList, _favoriteList
     ) { states: Array<Any?> ->
         val state = states[0] as MediaState
         val audioList = states[1] as List<MediaItem>
@@ -98,6 +98,7 @@ class MediaViewModel @Inject constructor(
         val backgroundColor = states[3] as Color
         val cover = states[4] as Bitmap?
         val searchAudioList = states[5] as List<MediaItem>
+        val favoriteList = states[6] as List<MediaItem>
 
         state.copy(
             mediaFiles = audioList,
@@ -105,7 +106,8 @@ class MediaViewModel @Inject constructor(
             backgroundColor = backgroundColor,
             cover = cover,
             favorite = if (audioList.isEmpty()) false else audioList[_currentMediaIndex.value].favorite,
-            searchedMediaFiles = searchAudioList
+            searchedMediaFiles = searchAudioList,
+            favoriteMediaFiles = favoriteList
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MediaState())
 
@@ -143,12 +145,6 @@ class MediaViewModel @Inject constructor(
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .build()
                 )
-//                setOnPreparedListener {
-//                    seekTo(_currentPosition.value.toInt())
-//                    start()
-//                    isMediaPlayerPrepared = true
-//                    _state.update { it.copy(isPlaying = true) }
-//                }
             }
         }
     }
@@ -174,7 +170,6 @@ class MediaViewModel @Inject constructor(
     }
 
     private fun updateStateWithCurrentPosition() {
-//        Log.d("Kuch toh debug", "Time: ${_currentPosition.value}")
         val currentPosition: Long = mediaPlayer?.currentPosition?.toLong() ?: 0L
         _currentPosition.value = currentPosition
     }
@@ -182,7 +177,6 @@ class MediaViewModel @Inject constructor(
     @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     @RequiresApi(Build.VERSION_CODES.Q)
     fun onEvent(event: MediaEvent) {
-//        Log.d("Kuch toh debug", "Time: $_currentPosition")
         when (event) {
             // Play Next Audio
             is MediaEvent.NextAudio -> {
@@ -218,7 +212,6 @@ class MediaViewModel @Inject constructor(
 
             // Play Audio
             MediaEvent.PlayAudio -> {
-//                Log.d("Kuch toh debug", "Current Position: ${_currentPosition.value}")
                 _state.update {
                     it.copy(
                         isPlaying = true
@@ -229,7 +222,6 @@ class MediaViewModel @Inject constructor(
 
             // Select Media
             is MediaEvent.SelectMedia -> {
-//                Log.d("Kuch toh debug", "Media selected")
                 _currentMediaIndex.value = event.mediaIndex
                 _state.update {
                     it.copy(
@@ -254,15 +246,12 @@ class MediaViewModel @Inject constructor(
                         isMediaPlayerPrepared = true
                     }
                     setOnCompletionListener {
-//                        release()
-//                        isMediaPlayerPrepared = false
                         onEvent(MediaEvent.NextAudio(context = event.context))
                     }
                 }
 
 //                getMediaAmplitudes(event.context, audioPath)
                 _state.update { it.copy(isPlaying = true) }
-                Log.d("Kuch toh debug", "MediaPlayer working just fine")
             }
             is MediaEvent.SearchSelectMedia -> {
                 var index = 0
@@ -322,41 +311,27 @@ class MediaViewModel @Inject constructor(
         }
     }
 
-    private fun getMediaAmplitudes(context: Context, audioPath: String?) {
-//        val amplituda = Amplituda(context)
-//        val processingOutput = amplituda.processAudio(audioPath)
-//        val result = processingOutput.get()
-//        val list = result.amplitudesAsList()
-//        _amplitudes.value = list
-    }
-
     @RequiresApi(Build.VERSION_CODES.Q)
     suspend fun initializeListIfNeeded(context: Context) {
         if (_initialized) return
-        val mediaFiles = ArrayList<MediaItem>()
         if (checkPermission(context)) {
-            queryMediaStore(context, MediaStore.VOLUME_EXTERNAL, mediaFiles)
+            queryMediaStore(context, MediaStore.VOLUME_EXTERNAL)
 
             if (isSDCardAvailable(context)) {
-                queryMediaStore(context, MediaStore.VOLUME_EXTERNAL_PRIMARY, mediaFiles)
+                queryMediaStore(context, MediaStore.VOLUME_EXTERNAL_PRIMARY)
             }
         } else {
             requestPermission(context)
         }
 
-//        Log.d("Kuch toh debug", "Hello $mediaFiles")
-//        _audioList.value = mediaFiles
-//        _audioList.value = dao.getAllMediaByTitle().first()
         _initialized = true
     }
 
     private suspend fun queryMediaStore(
         context: Context,
-        volumeName: String,
-        mediaFiles: MutableList<MediaItem>
+        volumeName: String
     ) {
         val collection = MediaStore.Audio.Media.getContentUri(volumeName)
-//        Log.d("Kuch toh debug", "Does $collection exists!!")
         val projection = arrayOf(
             MediaStore.Audio.Media._ID,
             MediaStore.Audio.Media.DISPLAY_NAME,
@@ -397,7 +372,6 @@ class MediaViewModel @Inject constructor(
                 val uri: Uri = ContentUris.withAppendedId(collection, id)
 
                 if (mimeType.equals("audio/mpeg")) {
-//                    mediaFiles.add(MediaItem(id, title, uri, artist, dateAddedId, duration))
                     if (!dao.exists(id))
                         dao.saveMedia(MediaItem(id, title, uri, artist, dateAddedId, duration))
                 }
@@ -458,16 +432,12 @@ class MediaViewModel @Inject constructor(
     }
 
     private fun loadBitmapIfNeeded(context: Context, index: Int) {
-//        if (_audioList.value[index].cover != null) return
         // if this is gonna lag during scrolling, you can move it on a background thread
         _backgroundScope.launch {
             val bitmap = getAlbumArt(context, _audioList.value[index].contentUri)
-//            Log.d("Kuch toh debug", "Bitmap loaded: $bitmap")
             updateBackgroundColor(bitmap)
             val mediaFiles = _audioList.value.toMutableList()
-//            mediaFiles[index] = mediaFiles[index].copy(cover = bitmap)
             _cover.value = bitmap
-//            _audioList.value = mediaFiles
         }
 
 //        _backgroundScope.launch {
@@ -481,12 +451,10 @@ class MediaViewModel @Inject constructor(
     }
 
     private fun getAlbumArt(context: Context, uri: Uri): Bitmap {
-//        Log.d("Kuch toh debug", "Is $uri valid!!")
         val mmr = MediaMetadataRetriever()
         try {
             mmr.setDataSource(context, uri)
             val data = mmr.embeddedPicture
-//            Log.d("Kuch toh debug", "Is Data null?? ${data == null}")
             return if (data != null) {
                 BitmapFactory.decodeByteArray(data, 0, data.size)
             } else {
@@ -546,19 +514,6 @@ class MediaViewModel @Inject constructor(
                 arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE),
                 0
             )
-        }
-    }
-
-    fun dismissPermissionDialog() {
-        visiblePermissionDialogQueue.removeLast()
-    }
-
-    fun onPermissionResult(
-        permission: String,
-        isGranted: Boolean
-    ) {
-        if (!isGranted) {
-            visiblePermissionDialogQueue.add(0, permission)
         }
     }
 }
