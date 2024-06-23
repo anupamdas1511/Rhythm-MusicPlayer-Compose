@@ -59,6 +59,7 @@ import com.anupam.musicplayer.data.MediaItem
 import com.anupam.musicplayer.data.MediaState
 import com.anupam.musicplayer.presentations.components.DashboardPlayer
 import com.anupam.musicplayer.presentations.components.FloatingBottomPlayer
+import com.anupam.musicplayer.presentations.components.MusicItem
 import com.anupam.musicplayer.presentations.components.rememberSearchState
 import com.anupam.musicplayer.viewmodels.MediaEvent
 import kotlinx.coroutines.flow.Flow
@@ -169,74 +170,6 @@ fun MusicDashboard(
                         }
                     )
                 }
-            }
-        }
-    }
-}
-
-@Composable
-fun MusicItem(
-    modifier: Modifier = Modifier,
-    audio: MediaItem,
-    index: Int = 0,
-    isPlaying: Boolean = false,
-    onClick: () -> Unit
-) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                onClick.invoke()
-            }
-            .padding(10.dp)
-    ) {
-        Column(
-            modifier.weight(10f)
-        ) {
-            Text(
-                text = audio.name,
-                color = if (isPlaying) Color.Cyan else Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Clip
-            )
-            Text(
-                text = audio.artist ?: "Unknown Artist",
-                color = Color.Gray,
-                maxLines = 1,
-                overflow = TextOverflow.Clip
-            )
-        }
-//        Spacer(modifier = Modifier.weight(1f))
-        if (audio.favorite) {
-            Icon(imageVector = Icons.Default.Favorite, contentDescription = null)
-        }
-
-        IconButton(onClick = {
-            // todo: unimplemented
-        }) {
-            if (isPlaying) {
-                Icon(
-                    imageVector = Icons.Sharp.MusicNote,
-                    contentDescription = null,
-                    tint = Color.Cyan
-                )
-//                Image(
-//                    painter = rememberAsyncImagePainter(
-//                        model = ImageRequest.Builder(context = LocalContext.current)
-//                            .data(R.drawable.music_wave)
-//                            .crossfade(true)
-//                            .build()
-//                    ),
-//                    contentDescription = null
-//                )
-            } else {
-                Icon(
-                    painter = painterResource(id = R.drawable.add_to_queue),
-                    contentDescription = null,
-                    tint = Color.White
-                )
             }
         }
     }

@@ -38,6 +38,8 @@ import com.anupam.musicplayer.db.MediaDao
 import com.anupam.musicplayer.services.PlayerNotificationService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -45,7 +47,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -62,6 +67,8 @@ class MediaViewModel @Inject constructor(
     val visiblePermissionDialogQueue = mutableStateListOf<String>()
     private val _audioList: StateFlow<List<MediaItem>> = dao.getAllMediaByTitle()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    private val _searchAudioList = MutableStateFlow<List<MediaItem>>(emptyList())
+
 //    val audioList: StateFlow<List<MediaItem>> = _audioList
     private var _initialized = false
     private val _backgroundScope = viewModelScope.plus(Dispatchers.Default)
@@ -74,7 +81,7 @@ class MediaViewModel @Inject constructor(
     private var _currentMediaIndex = MutableStateFlow(0)
     private var _backgroundColor = MutableStateFlow(Color.Black)
     private var _cover = MutableStateFlow<Bitmap?>(null)
-//    private var _isFavorite = MutableStateFlow(_audioList.value[_currentMediaIndex.value].favorite)
+    private var _query = MutableStateFlow("")
 
     private var _amplitudes = MutableStateFlow<List<Int>>(emptyList())
 
@@ -83,14 +90,22 @@ class MediaViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(MediaState())
     val state = combine(
-        _state, _audioList, _currentPosition, _backgroundColor, _cover
-    ) { state, audioList, currentPosition, backgroundColor, cover ->
+        _state, _audioList, _currentPosition, _backgroundColor, _cover, _searchAudioList
+    ) { states: Array<Any?> ->
+        val state = states[0] as MediaState
+        val audioList = states[1] as List<MediaItem>
+        val currentPosition = states[2] as Long
+        val backgroundColor = states[3] as Color
+        val cover = states[4] as Bitmap?
+        val searchAudioList = states[5] as List<MediaItem>
+
         state.copy(
             mediaFiles = audioList,
             currentPosition = currentPosition,
             backgroundColor = backgroundColor,
             cover = cover,
-            favorite = if (audioList.isEmpty()) false else audioList[_currentMediaIndex.value].favorite
+            favorite = if (audioList.isEmpty()) false else audioList[_currentMediaIndex.value].favorite,
+            searchedMediaFiles = searchAudioList
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), MediaState())
 
@@ -113,7 +128,7 @@ class MediaViewModel @Inject constructor(
         }
     }
 
-    fun stopMediaPlayback() {
+    private fun stopMediaPlayback() {
         val context = getApplication<Application>().applicationContext
         val intent = Intent(context, PlayerNotificationService::class.java)
         context.stopService(intent)
@@ -164,6 +179,7 @@ class MediaViewModel @Inject constructor(
         _currentPosition.value = currentPosition
     }
 
+    @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
     @RequiresApi(Build.VERSION_CODES.Q)
     fun onEvent(event: MediaEvent) {
 //        Log.d("Kuch toh debug", "Time: $_currentPosition")
@@ -248,9 +264,32 @@ class MediaViewModel @Inject constructor(
                 _state.update { it.copy(isPlaying = true) }
                 Log.d("Kuch toh debug", "MediaPlayer working just fine")
             }
+            is MediaEvent.SearchSelectMedia -> {
+                var index = 0
+                _audioList.value.forEachIndexed { mediaIndex, mediaItem ->
+                    if (event.media.id == mediaItem.id) {
+                        index = mediaIndex
+                    }
+                }
+                onEvent(MediaEvent.SelectMedia(index, event.context))
+            }
+            is MediaEvent.QueryChange -> {
+                _query.value = event.query
+            }
             // Search Media
-            is MediaEvent.SearchMedia -> {
-
+            MediaEvent.SearchMedia -> {
+                viewModelScope.launch {
+                    _query.debounce(300)
+                        .flatMapLatest { query ->
+                            if (query.isEmpty()) {
+                                flowOf(emptyList())
+                            } else {
+                                dao.searchMediaByQuery(query)
+                            }
+                        }.collect { searchResults ->
+                            _searchAudioList.value = searchResults
+                        }
+                }
             }
             // Seek Media
             is MediaEvent.SeekMedia -> {
@@ -279,6 +318,7 @@ class MediaViewModel @Inject constructor(
                     favorite = !_state.value.favorite
                 ) }
             }
+
         }
     }
 

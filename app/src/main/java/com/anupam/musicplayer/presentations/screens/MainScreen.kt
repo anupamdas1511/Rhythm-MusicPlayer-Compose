@@ -20,6 +20,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -49,6 +50,7 @@ fun MainScreen(
 ) {
     val context = LocalContext.current
     val isTablet = context.isTablet()
+    val state = mediaState.collectAsState(initial = MediaState())
     val tabItems = listOf(
         TabItem(
             title = "Dashboard",
@@ -94,7 +96,10 @@ fun MainScreen(
                     MusicDashboard(mediaState = mediaState, onEvent = onEvent, navController = navController, isTabletMode = isTablet)
                 }
                 TabMode.SEARCH_MODE.ordinal -> {
-                    SearchScreen()
+                    SearchScreen(
+                        onEvent = onEvent,
+                        state = state.value
+                    )
                 }
                 TabMode.SETTINGS_MODE.ordinal -> {
 
